@@ -1,0 +1,98 @@
+# Arduino IDE 1.5 3rd party Hardware specification
+# https://github.com/arduino/Arduino/wiki/Arduino-IDE-1.5-3rd-party-Hardware-specification
+
+name=SeeedJP STM32F4 Boards
+version=1.0.0
+
+# --------------------------------------------------------------------------------
+# Variables
+# --------------------------------------------------------------------------------
+
+compiler.path={runtime.tools.arm-none-eabi-gcc.path}/bin/
+
+compiler.flags.function.c=-std=c11
+compiler.flags.function.cpp=-std=c++14
+compiler.flags.arm=-mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
+compiler.flags.warning=-Wall
+compiler.flags.preprocessor=-DARDUINO_{build.board} -DSTM32F439xx -DUSE_HAL_DRIVER
+compiler.flags.optimization=-Os -ffunction-sections
+compiler.flags.debugging=-g
+compiler.flags.include.stm32cubef4="-I{build.core.path}/STM32CubeF4/Drivers/CMSIS/Include" "-I{build.core.path}/STM32CubeF4/Drivers/CMSIS/Device/ST/STM32F4xx/Include" "-I{build.core.path}/STM32CubeF4/Drivers/STM32F4xx_HAL_Driver/Inc" "-I{build.core.path}/DSL" "-I{build.core.path}/Boards/STM324x9I_EVAL"
+compiler.flags.include={compiler.flags.include.stm32cubef4}
+
+linker.flags.specs=-specs=nosys.specs -specs=nano.specs -u _printf_float -u _scanf_float
+linker.flags.linker=-lm "-L{build.path}" "-T{build.core.path}/{build.ldscript}" -Wl,--cref -Wl,--check-sections -Wl,--gc-sections -Wl,--unresolved-symbols=report-all -Wl,--warn-common -Wl,--warn-unresolved-symbols
+
+# Compile for C files
+# ----------------------------------------
+compiler.c.cmd=arm-none-eabi-gcc
+compiler.c.flags=-c {compiler.flags.function.c} {compiler.flags.arm} {compiler.flags.warning} {compiler.flags.preprocessor} {compiler.flags.optimization} {compiler.flags.debugging} {compiler.flags.include}
+
+# Compile for CPP files
+# ----------------------------------------
+compiler.cpp.cmd=arm-none-eabi-g++
+compiler.cpp.flags=-c {compiler.flags.function.cpp} {compiler.flags.arm} {compiler.flags.warning} {compiler.flags.preprocessor} {compiler.flags.optimization} {compiler.flags.debugging} {compiler.flags.include}
+
+# Compile for Assembly files
+# ----------------------------------------
+compiler.S.cmd=arm-none-eabi-gcc
+compiler.S.flags=-c -c {compiler.flags.arm} {compiler.flags.warning} {compiler.flags.preprocessor} {compiler.flags.optimization} {compiler.flags.debugging} {compiler.flags.include}
+
+# Archive
+# ----------------------------------------
+archiver.cmd=arm-none-eabi-ar
+archiver.flags=rcs
+
+# Link
+# ----------------------------------------
+linker.cmd=arm-none-eabi-g++
+linker.flags={compiler.flags.arm} {linker.flags.specs} {linker.flags.linker}
+
+# Extract
+# ----------------------------------------
+compiler.elf2hex.cmd=arm-none-eabi-objcopy
+compiler.elf2hex.flags=-O binary
+
+# Compute binary size
+# ----------------------------------------
+compiler.size.cmd=arm-none-eabi-size
+
+# --------------------------------------------------------------------------------
+# Recipes
+# --------------------------------------------------------------------------------
+
+# Recipes to compile source code
+# ----------------------------------------
+recipe.c.o.pattern="{compiler.path}{compiler.c.cmd}" {compiler.c.flags} {includes} -o "{object_file}" "{source_file}"
+recipe.cpp.o.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.cpp.flags} {includes} -o "{object_file}" "{source_file}"
+recipe.S.o.pattern="{compiler.path}{compiler.S.cmd}" {compiler.S.flags} {includes} -o "{object_file}" "{source_file}"
+
+# Recipes to build the core.a archive file
+# ----------------------------------------
+recipe.ar.pattern="{compiler.path}{archiver.cmd}" {archiver.flags} "{archive_file_path}" "{object_file}"
+
+# Recipes for linking
+# ----------------------------------------
+recipe.c.combine.pattern="{compiler.path}{linker.cmd}" {linker.flags} "-Wl,-Map,{build.path}/{build.project_name}.map" -o "{build.path}/{build.project_name}.elf" -Wl,--start-group {object_files} -Wl,--whole-archive "{build.path}/{archive_file}" -Wl,--no-whole-archive -Wl,--end-group
+
+# Recipes for extraction of executable files and other binary data
+# ----------------------------------------
+recipe.objcopy.eep.pattern=
+recipe.objcopy.hex.pattern="{compiler.path}{compiler.elf2hex.cmd}" {compiler.elf2hex.flags} "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.bin"
+
+# Recipes to compute binary sketch size
+# ----------------------------------------
+recipe.size.pattern="{compiler.path}{compiler.size.cmd}" -A "{build.path}/{build.project_name}.elf"
+recipe.size.regex=^(?:\.isr_vector|\.text|\.rodata|\.ARM\.extab|\.ARM|\.preinit_array|\.init_array|\.fini_array|\.data|\.ccmram)\s+([0-9]+).*
+recipe.size.regex.data=^(?:\.data|\.ccmram|\.bss)\s+([0-9]+).*
+
+# --------------------------------------------------------------------------------
+# Sketch upload configuration
+# --------------------------------------------------------------------------------
+
+tools.daplink-tools.path={runtime.tools.daplink-tools.path}
+
+tools.daplink-tools.upload.params.verbose=
+tools.daplink-tools.upload.params.quiet=
+tools.daplink-tools.upload.pattern.windows="{path}/windows/daplink-upload.exe" "{build.path}/{build.project_name}.bin"
+tools.daplink-tools.upload.pattern.macosx="cp" "{build.path}/{build.project_name}.bin" /Volumes/DAPLINK/

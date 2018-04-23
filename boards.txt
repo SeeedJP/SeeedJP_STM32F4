@@ -1,0 +1,13 @@
+##############################################################
+
+Wio3G.name=Seeed Wio 3G
+
+Wio3G.build.board=WIO_3G
+Wio3G.build.core=Arduino
+Wio3G.build.ldscript=Boards/STM324x9I_EVAL/STM32F439NIHx_FLASH.ld
+
+Wio3G.upload.tool=daplink-tools
+Wio3G.upload.protocol=msd
+#Wio3G.upload.maximum_size=1048576
+
+##############################################################
