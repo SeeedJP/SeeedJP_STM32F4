@@ -3,9 +3,11 @@
 #include <DeviceSupportLibrary.h>
 
 #define ADC_CORE			(0)
+#define DAC_CORE			(0)
 #define CONVERSION_TIMEOUT	(10)
 
 static ADC_HandleTypeDef Adc0Handle;
+static DAC_HandleTypeDef Dac0Handle;
 
 int analogRead(int pin)
 {
@@ -43,4 +45,24 @@ int analogRead(int pin)
 	if (HAL_ADC_PollForConversion(&Adc0Handle, CONVERSION_TIMEOUT) != HAL_OK) return 0;	// TODO
 	if ((HAL_ADC_GetState(&Adc0Handle) & HAL_ADC_STATE_EOC_REG) != HAL_ADC_STATE_EOC_REG) return 0;
 	return HAL_ADC_GetValue(&Adc0Handle);
+}
+
+void analogWrite(int pin, int value)
+{
+	static bool first = true;
+
+	if (first) {
+		Dac0Handle.Instance = DslDacRegs[DAC_CORE];
+		if (HAL_DAC_Init(&Dac0Handle) != HAL_OK) return;
+
+		first = false;
+	}
+
+	const auto channel = DslDacChannel(DslDacRegs[DAC_CORE], pin); 
+	DAC_ChannelConfTypeDef chConfig;
+	chConfig.DAC_Trigger = DAC_TRIGGER_NONE;
+	chConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
+	if (HAL_DAC_ConfigChannel(&Dac0Handle, &chConfig, channel) != HAL_OK) return;
+
+	HAL_DAC_SetValue(&Dac0Handle, channel, DAC_ALIGN_12B_R, value);
 }

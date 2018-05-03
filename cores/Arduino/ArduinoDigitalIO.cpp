@@ -26,6 +26,10 @@ void pinMode(int pin, int mode)
 		gpioInit.Mode = GPIO_MODE_ANALOG;
 		gpioInit.Pull = GPIO_NOPULL;
 		break;
+	case OUTPUT_ANALOG:
+		gpioInit.Mode = GPIO_MODE_ANALOG;
+		gpioInit.Pull = GPIO_NOPULL;
+		break;
 	}
 	HAL_GPIO_Init(DslGpioRegs[pin / 16], &gpioInit);
 }
