@@ -64,5 +64,6 @@ void analogWrite(int pin, int value)
 	chConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
 	if (HAL_DAC_ConfigChannel(&Dac0Handle, &chConfig, channel) != HAL_OK) return;
 
+	if (HAL_DAC_Start(&Dac0Handle, channel) != HAL_OK) return;
 	HAL_DAC_SetValue(&Dac0Handle, channel, DAC_ALIGN_12B_R, value);
 }
