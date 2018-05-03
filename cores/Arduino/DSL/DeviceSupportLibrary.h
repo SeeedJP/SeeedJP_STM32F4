@@ -20,6 +20,15 @@ void DslAdcClockEnable(ADC_TypeDef* reg);
 uint32_t DslAdcChannel(ADC_TypeDef* reg, int pin);
 
 ////////////////////////////////////////
+// DAC
+
+extern DAC_TypeDef* const DslDacRegs[];
+extern const uint32_t DslDacChannels[];
+
+void DslDacClockEnable(DAC_TypeDef* reg);
+uint32_t DslDacChannel(DAC_TypeDef* reg, int pin);
+
+////////////////////////////////////////
 // UART
 
 extern USART_TypeDef* const DslUartRegs[];

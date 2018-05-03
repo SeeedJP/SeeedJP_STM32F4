@@ -53,6 +53,7 @@ private:
 #define INPUT			(1)
 #define INPUT_PULLUP	(2)
 #define INPUT_ANALOG	(3)
+#define OUTPUT_ANALOG	(4)
 
 #define LOW		(0x0)
 #define HIGH	(0x1)
@@ -64,7 +65,7 @@ void pinMode(int pin, int mode);
 // ArduinoAnalogIO.cpp
 
 int analogRead(int pin);
-
+void analogWrite(int pin, int value);
 
 // ArduinoAdvancedIO.cpp
 int pulseIn(int pin, int value, unsigned long timeout = 1000000);

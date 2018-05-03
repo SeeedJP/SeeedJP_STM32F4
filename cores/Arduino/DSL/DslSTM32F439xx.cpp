@@ -134,6 +134,38 @@ uint32_t DslAdcChannel(ADC_TypeDef* reg, int pin)
 }
 
 ////////////////////////////////////////
+// DAC
+
+DAC_TypeDef* const DslDacRegs[] = {
+	DAC1
+};
+
+const uint32_t DslDacChannels[] = {
+	DAC_CHANNEL_1
+};
+
+void DslDacClockEnable(DAC_TypeDef* reg)
+{
+	if (reg == DAC1) { __HAL_RCC_DAC_CLK_ENABLE(); }
+}
+
+uint32_t DslDacChannel(DAC_TypeDef* reg, int pin)
+{
+	switch (pin) {
+	case PINNAME_TO_PIN('A', 4):
+		if (reg == DAC1) return 4;
+	case PINNAME_TO_PIN('A', 5):
+		if (reg == DAC1) return 5;
+	case PINNAME_TO_PIN('A', 6):
+		if (reg == DAC1) return 6;
+	case PINNAME_TO_PIN('A', 7):
+		if (reg == DAC1) return 7;
+	}
+
+	return 0;	// TODO Fail.
+}
+
+////////////////////////////////////////
 // UART
 
 USART_TypeDef* const DslUartRegs[] = {
