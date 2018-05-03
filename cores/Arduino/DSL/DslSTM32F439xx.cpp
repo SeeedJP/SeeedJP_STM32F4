@@ -141,7 +141,8 @@ DAC_TypeDef* const DslDacRegs[] = {
 };
 
 const uint32_t DslDacChannels[] = {
-	DAC_CHANNEL_1
+	DAC_CHANNEL_1,
+	DAC_CHANNEL_2
 };
 
 void DslDacClockEnable(DAC_TypeDef* reg)
@@ -153,13 +154,11 @@ uint32_t DslDacChannel(DAC_TypeDef* reg, int pin)
 {
 	switch (pin) {
 	case PINNAME_TO_PIN('A', 4):
-		if (reg == DAC1) return 4;
+		if (reg == DAC1) return DAC_CHANNEL_1;
+		break;
 	case PINNAME_TO_PIN('A', 5):
-		if (reg == DAC1) return 5;
-	case PINNAME_TO_PIN('A', 6):
-		if (reg == DAC1) return 6;
-	case PINNAME_TO_PIN('A', 7):
-		if (reg == DAC1) return 7;
+		if (reg == DAC1) return DAC_CHANNEL_2;
+		break;
 	}
 
 	return 0;	// TODO Fail.
