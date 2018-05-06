@@ -37,3 +37,12 @@ extern I2C_TypeDef* const DslI2cRegs[];
 
 void DslI2cClockEnable(I2C_TypeDef* reg);
 uint32_t DslI2cGpioAlternate(I2C_TypeDef* reg, int pin);
+
+////////////////////////////////////////
+// SPI
+
+extern SPI_TypeDef* const DslSpiRegs[];
+
+void DslSpiClockEnable(SPI_TypeDef* reg);
+bool DslSpiNssAuto(SPI_TypeDef* reg, const int pin);
+uint32_t DslSpiGpioAlternate(SPI_TypeDef* reg, const int pin);

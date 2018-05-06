@@ -160,3 +160,5 @@ private:
 	std::vector<uint8_t> _Buffer;
 
 };
+
+#include "ArduinoSPI.h"
