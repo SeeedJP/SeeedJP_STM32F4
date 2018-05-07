@@ -2,6 +2,8 @@
 #include <stm32f4xx_hal.h>
 #include <DeviceSupportLibrary.h>
 
+///////////////////////////////////////////////////////////
+
 #define ADC_CORE			(0)
 #define CONVERSION_TIMEOUT	(10)
 
@@ -43,4 +45,47 @@ int analogRead(int pin)
 	if (HAL_ADC_PollForConversion(&Adc0Handle, CONVERSION_TIMEOUT) != HAL_OK) return 0;	// TODO
 	if ((HAL_ADC_GetState(&Adc0Handle) & HAL_ADC_STATE_EOC_REG) != HAL_ADC_STATE_EOC_REG) return 0;
 	return HAL_ADC_GetValue(&Adc0Handle);
+}
+
+///////////////////////////////////////////////////////////
+
+#define DAC_CORE	(0)
+
+static DAC_HandleTypeDef Dac0Handle;
+
+void internalInitializeDacPorts(int pin)
+{
+	static auto first = true;
+
+	const auto channel = DslDacChannel(DslDacRegs[DAC_CORE], pin); 
+
+	if (first) {
+		GPIO_InitTypeDef gpioInit;
+		gpioInit.Pin = DslGpioPins[pin % 16];
+		gpioInit.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+
+		gpioInit.Mode = GPIO_MODE_ANALOG;
+		gpioInit.Pull = GPIO_NOPULL;
+		HAL_GPIO_Init(DslGpioRegs[pin / 16], &gpioInit);
+
+		DslDacClockEnable(DslDacRegs[DAC_CORE]);
+
+		Dac0Handle.Instance = DslDacRegs[DAC_CORE];
+		if (HAL_DAC_Init(&Dac0Handle) != HAL_OK) return;
+
+		first = false;
+	}
+
+	DAC_ChannelConfTypeDef chConfig;
+	chConfig.DAC_Trigger = DAC_TRIGGER_NONE;
+	chConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
+	if (HAL_DAC_ConfigChannel(&Dac0Handle, &chConfig, channel) != HAL_OK) return;
+
+	if (HAL_DAC_Start(&Dac0Handle, channel) != HAL_OK) return;
+}
+
+void analogWrite(int pin, int value)
+{
+	const auto channel = DslDacChannel(DslDacRegs[DAC_CORE], pin); 
+	HAL_DAC_SetValue(&Dac0Handle, channel, DAC_ALIGN_12B_R, value);
 }

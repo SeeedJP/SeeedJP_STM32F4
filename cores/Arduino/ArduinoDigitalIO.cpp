@@ -2,6 +2,8 @@
 #include <stm32f4xx_hal.h>
 #include <DeviceSupportLibrary.h>
 
+extern void internalInitializeDacPorts(int pin);
+
 void pinMode(int pin, int mode)
 {
 	DslGpioClockEnable(DslGpioRegs[pin / 16]);
@@ -9,6 +11,14 @@ void pinMode(int pin, int mode)
 	GPIO_InitTypeDef gpioInit;
 	gpioInit.Pin = DslGpioPins[pin % 16];
 	gpioInit.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+	
+	// TODO:
+	//   1. Initialize sequence at each modes are mode-dependent.
+	//     So we have to finish intializing at this point.
+	//     (ex: currently analogRead() has ADC initializing code)
+	//   2. We have to save current state at each pins,
+	//     and do de-initializing if mode has changed.
+	//   --> pinMode() maybe moves to new file location better than ArduinoDigitalIO.cpp.
 	switch (mode) {
 	case OUTPUT:
 		gpioInit.Mode = GPIO_MODE_OUTPUT_PP;
@@ -26,7 +36,13 @@ void pinMode(int pin, int mode)
 		gpioInit.Mode = GPIO_MODE_ANALOG;
 		gpioInit.Pull = GPIO_NOPULL;
 		break;
+
+	case OUTPUT_ANALOG:
+		// Initialize DAC with related ports.
+		internalInitializeDacPorts(pin);
+		return;
 	}
+
 	HAL_GPIO_Init(DslGpioRegs[pin / 16], &gpioInit);
 }
 
