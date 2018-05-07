@@ -4,11 +4,13 @@
 #include <stm32f4xx_it.h>
 #include <string.h>
 
-HardwareSerial::HardwareSerial(int port, int txPin, int rxPin)
+HardwareSerial::HardwareSerial(int port, int txPin, int rxPin, int ctsPin, int rtsPin)
 {
 	_Port = port;
 	_TxPin = txPin;
 	_RxPin = rxPin;
+	_CtsPin = ctsPin;
+	_RtsPin = rtsPin;
 
 	_RxBufferCapacity = 0;
 
@@ -30,6 +32,14 @@ void HardwareSerial::begin(long speed, int config)
 
 	while (!_RxBuffer.empty()) _RxBuffer.pop();
 	_RxBufferOverflow = false;
+
+	if (_CtsPin >= 0) {
+		pinMode(_CtsPin, INPUT);
+	}
+	if (_RtsPin >= 0) {
+		pinMode(_RtsPin, OUTPUT);
+		digitalWrite(_RtsPin, LOW);
+	}
 
 	DslGpioClockEnable(DslGpioRegs[_TxPin / 16]);
 	DslGpioClockEnable(DslGpioRegs[_RxPin / 16]);

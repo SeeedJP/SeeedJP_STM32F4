@@ -85,7 +85,7 @@ unsigned long millis();
 class HardwareSerial : public Print
 {
 public:
-	HardwareSerial(int port, int txPin, int rxPin);
+	HardwareSerial(int port, int txPin, int rxPin, int ctsPin = -1, int rtsPin = -1);
 	~HardwareSerial();
 
 	int available() const;
@@ -106,8 +106,10 @@ public:
 
 private:
 	int _Port;
-	int _TxPin;
-	int _RxPin;
+	int _TxPin;		// out
+	int _RxPin;		// in
+	int _CtsPin;	// in
+	int _RtsPin;	// out
 
 	int _RxBufferCapacity;
 
