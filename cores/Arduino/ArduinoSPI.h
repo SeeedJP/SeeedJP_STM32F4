@@ -23,13 +23,14 @@
 #define MSBFIRST 1
 #endif
 
-#define SPI_CLOCK_DIV4 0x00
-#define SPI_CLOCK_DIV16 0x01
-#define SPI_CLOCK_DIV64 0x02
-#define SPI_CLOCK_DIV128 0x03
-#define SPI_CLOCK_DIV2 0x04
-#define SPI_CLOCK_DIV8 0x05
-#define SPI_CLOCK_DIV32 0x06
+#define SPI_CLOCK_DIV2 0x00
+#define SPI_CLOCK_DIV4 0x08
+#define SPI_CLOCK_DIV8 0x10
+#define SPI_CLOCK_DIV16 0x18
+#define SPI_CLOCK_DIV32 0x20
+#define SPI_CLOCK_DIV64 0x28
+#define SPI_CLOCK_DIV128 0x30
+#define SPI_CLOCK_DIV256 0x38
 
 #define SPI_MODE0 0x00
 #define SPI_MODE1 0x04
@@ -62,12 +63,12 @@ private:
   const int mosiPin_;
   const int misoPin_;
   int beginCount_;
-  bool initialized_;
+  bool parameterInitialized_;
   void* handle_;  // SPI_HandleTypeDef*
   int selectPin_;
 
   void InitializeSelectSlaveGpioPort();
-  bool InitializeSPIHalIfRequired(const uint32_t dataSize);
+  bool TryInitializeParameter(const uint32_t dataSize);
   void SelectSlaveIfRequired(const bool select);
 
 public:
@@ -90,45 +91,42 @@ public:
 
   uint8_t transfer(const uint8_t data);
   uint16_t transfer16(const uint16_t data);
-  void transfer(void *buf, const size_t count);
+  void transfer(void* buf, const size_t count);
+
+  size_t transferBytes(const uint8_t* sendData, uint8_t* receivedData, const size_t count);
+  size_t transferWords(const uint16_t* sendData, uint16_t* receivedData, const size_t count);
 
   void setBitOrder(const uint8_t bitOrder);
   void setDataMode(const uint8_t dataMode);
   void setClockDivider(const uint8_t clockDiv);
-
-  void attachInterrupt();
-  void detachInterrupt();
 };
 
 // Wio 3G default SPI interface (bound SPI3 - TF card interface)
-extern WioSPIClass WioSPI3;
+extern WioSPIClass WioTFSPI;
 
 typedef WioSPISettings SPISettings;
 
 class SPIClass
 {
 public:
-  static inline void begin() { WioSPI3.begin(); }
-  static inline void end() { WioSPI3.end(); }
+  static inline void begin() { WioTFSPI.begin(); }
+  static inline void end() { WioTFSPI.end(); }
 
   static inline void usingInterrupt(uint8_t interruptNumber) { }
   static inline void notUsingInterrupt(uint8_t interruptNumber) { }
 
   // It signature bit changed because save from copy construct.
-  static inline void beginTransaction(const SPISettings& settings) { WioSPI3.beginTransaction(settings); }
+  static inline void beginTransaction(const SPISettings& settings) { WioTFSPI.beginTransaction(settings); }
 
-  static inline void endTransaction(void) { WioSPI3.endTransaction(); }
+  static inline void endTransaction(void) { WioTFSPI.endTransaction(); }
 
-  static inline uint8_t transfer(uint8_t data) { return WioSPI3.transfer(data); }
-  static inline uint16_t transfer16(uint16_t data) { return WioSPI3.transfer16(data); }
-  static inline void transfer(void *buf, size_t count) { WioSPI3.transfer(buf, count); }
+  static inline uint8_t transfer(uint8_t data) { return WioTFSPI.transfer(data); }
+  static inline uint16_t transfer16(uint16_t data) { return WioTFSPI.transfer16(data); }
+  static inline void transfer(void *buf, size_t count) { WioTFSPI.transfer(buf, count); }
 
-  static inline void setBitOrder(uint8_t bitOrder) { WioSPI3.setBitOrder(bitOrder); }
-  static inline void setDataMode(uint8_t dataMode) { WioSPI3.setDataMode(dataMode); }
-  static inline void setClockDivider(uint8_t clockDiv) { WioSPI3.setClockDivider(clockDiv); }
-
-  static inline void attachInterrupt() { WioSPI3.attachInterrupt(); }
-  static inline void detachInterrupt() { WioSPI3.detachInterrupt(); }
+  static inline void setBitOrder(uint8_t bitOrder) { WioTFSPI.setBitOrder(bitOrder); }
+  static inline void setDataMode(uint8_t dataMode) { WioTFSPI.setDataMode(dataMode); }
+  static inline void setClockDivider(uint8_t clockDiv) { WioTFSPI.setClockDivider(clockDiv); }
 };
 
 // Legacy Arduino implementation (It's statical facade)

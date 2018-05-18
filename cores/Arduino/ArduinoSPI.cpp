@@ -13,10 +13,15 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-// Wio 3G default SPI interface (bound SPI3 - TF card interface)
-WioSPIClass WioSPI3(WioSPIClass::SPI3, );
+#define NSS_SPI3 PINNAME_TO_PIN('D', 0)     // (Not hardware NSS)
+#define SCK_SPI3 PINNAME_TO_PIN('C', 10)
+#define MISO_SPI3 PINNAME_TO_PIN('C', 11)
+#define MOSI_SPI3 PINNAME_TO_PIN('C', 12)
 
-// Legacy Arduino implementation (It's statical facade)
+// Wio 3G default SPI interface (bound SPI3 - TF card interface)
+WioSPIClass WioTFSPI(WioSPIClass::WioSPI3, SCK_SPI3, MOSI_SPI3, MISO_SPI3);
+
+// Legacy Arduino implementation (It's static facade)
 SPIClass SPI;
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -27,7 +32,8 @@ SPIClass SPI;
 WioSPISettings::WioSPISettings()
     : parameter_(new SPI_InitTypeDef)
 {
-    init(4000000, MSBFIRST, SPI_MODE0);
+    // Defaulted: SPI3, 4MHz, MSB, MODE0
+    init(NSS_SPI3, 4000000, MSBFIRST, SPI_MODE0);
 }
 
 WioSPISettings::WioSPISettings(uint32_t clock, uint8_t bitOrder, uint8_t dataMode)
@@ -78,12 +84,10 @@ void WioSPISettings::init(int selectPin, uint32_t clock, uint8_t bitOrder, uint8
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-static WioSPISettings g_DefaultSPISettings;
-
 #define getRegs(t) (static_cast<SPI_TypeDef*>((t).regs_))
 #define getHandle(t) (static_cast<SPI_HandleTypeDef*>((t).handle_))
 
-#define getSelectPinOrDefaulted(t) ((((t).selectPin_) == -1) ? ((t).selectPin_) : getSelectPin(g_DefaultSPISettings))
+#define getSelectPinOrDefaulted(t) ((((t).selectPin_) == -1) ? ((t).selectPin_) : NSS_SPI3)
 
 WioSPIClass::WioSPIClass(const enum WioSPIClass::WioSPIDevice device, const int clockPin, const int mosiPin, const int misoPin)
     : regs_(DslSpiRegs[static_cast<int>(device)])
@@ -91,7 +95,7 @@ WioSPIClass::WioSPIClass(const enum WioSPIClass::WioSPIDevice device, const int 
     , mosiPin_(mosiPin)
     , misoPin_(misoPin)
     , beginCount_(0)
-    , initialized_(false)
+    , parameterInitialized_(false)
     , handle_(nullptr)
     , selectPin_(0)
 {
@@ -139,7 +143,7 @@ void WioSPIClass::begin()
 
         DslSpiClockEnable(regs);
 
-        initialized_ = false;
+        parameterInitialized_ = false;
     }
 }
 
@@ -155,7 +159,7 @@ void WioSPIClass::end()
 
             delete getHandle(*this);
 
-            initialized_ = false;
+            parameterInitialized_ = false;
         }
     }
 }
@@ -187,7 +191,7 @@ void WioSPIClass::beginTransaction(const WioSPISettings& settings)
 
     InitializeSelectSlaveGpioPort();
 
-    initialized_ = false;
+    parameterInitialized_ = false;
 }
 
 void WioSPIClass::endTransaction(void)
@@ -201,21 +205,21 @@ void WioSPIClass::endTransaction(void)
         // TODO: UninitializeSPIRelatedGpioPort(regs, getSelectPinOrDefaulted(*this));
     }
 
-    initialized_ = false;
+    parameterInitialized_ = false;
 }
 
-bool WioSPIClass::InitializeSPIHalIfRequired(const uint32_t dataSize)
+bool WioSPIClass::TryInitializeParameter(const uint32_t dataSize)
 {
-    if ((initialized_ == false) || (handle->Init.DataSize != dataSize))
+    if ((parameterInitialized_ == false) || (handle->Init.DataSize != dataSize))
     {
-        if (initialized_ == true)
+        if (parameterInitialized_ == true)
         {
             if (HAL_SPI_DeInit(handle) != HAL_OK)
             {
                 return false;
             }
 
-            initialized_ = false;
+            parameterInitialized_ = false;
         }
 
         handle->Init.DataSize = dataSize;
@@ -225,7 +229,7 @@ bool WioSPIClass::InitializeSPIHalIfRequired(const uint32_t dataSize)
             return false;
         }
 
-        initialized_ = true;
+        parameterInitialized_ = true;
     }
 
     return true;
@@ -234,6 +238,7 @@ bool WioSPIClass::InitializeSPIHalIfRequired(const uint32_t dataSize)
 void WioSPIClass::SelectSlaveIfRequired(const bool select)
 {
     auto handle = getHandle(*this);
+
     if (handle->Init.NSS == SPI_NSS_SOFT)
     {
         auto selectPin = getSelectPinOrDefaulted(*this);
@@ -245,7 +250,7 @@ void WioSPIClass::SelectSlaveIfRequired(const bool select)
 
 uint8_t WioSPIClass::transfer(const uint8_t data)
 {
-    if (InitializeSPIHalIfRequired(SPI_DATASIZE_8BIT) == false)
+    if (TryInitializeParameter(SPI_DATASIZE_8BIT) == false)
     {
         return 0;
     }
@@ -253,20 +258,20 @@ uint8_t WioSPIClass::transfer(const uint8_t data)
     SelectSlaveIfRequired(true);
 
     auto handle = getHandle(*this);
-    uint8_t received = 0;
-    if (HAL_SPI_TransmitReceive(handle, &data, &received, sizeof received, 10000) != HAL_OK)
+    uint8_t receivedData = 0;
+    if (HAL_SPI_TransmitReceive(handle, &data, &receivedData, sizeof receivedData, 10000) != HAL_OK)
     {
-        received = 0;
+        receivedData = 0;
     }
 
     SelectSlaveIfRequired(false);
 
-    return received;
+    return receivedData;
 }
 
 uint16_t WioSPIClass::transfer16(const uint16_t data)
 {
-    if (InitializeSPIHalIfRequired(SPI_DATASIZE_16BIT) == false)
+    if (TryInitializeParameter(SPI_DATASIZE_16BIT) == false)
     {
         return 0;
     }
@@ -274,10 +279,49 @@ uint16_t WioSPIClass::transfer16(const uint16_t data)
     SelectSlaveIfRequired(true);
 
     auto handle = getHandle(*this);
-    uint16_t received = 0;
-    if (HAL_SPI_TransmitReceive(handle, &data, &received, sizeof received, 10000) != HAL_OK)
+    uint16_t receivedData = 0;
+    if (HAL_SPI_TransmitReceive(handle, &data, &receivedData, sizeof receivedData, 10000) != HAL_OK)
+    {
+        receivedData = 0;
+    }
+
+    SelectSlaveIfRequired(false);
+
+    return receivedData;
+}
+
+void WioSPIClass::transfer(void *buf, const size_t count)
+{
+    // Use temporary buffer, we have to avoid race condition at full duplex transfer.
+    uint8_t* receivedData = alloca(count);
+    if (transferBytes(static_cast<const uint8_t*>(buf), receivedData, count) == count)
+    {
+        memcpy(buf, receivedData, count);
+    }
+    else
+    {
+        memset(buf, 0, count);
+    }
+}
+
+size_t WioSPIClass::transferBytes(const uint8_t* sendData, uint8_t* receivedData, const size_t count)
+{
+    if (TryInitializeParameter(SPI_DATASIZE_8BIT) == false)
+    {
+        return 0;
+    }
+
+    SelectSlaveIfRequired(true);
+
+    auto handle = getHandle(*this);
+    size_t received;
+    if (HAL_SPI_TransmitReceive(handle, sendData, receivedData, count, 10000) != HAL_OK)
     {
         received = 0;
+    }
+    else
+    {
+        received = count;
     }
 
     SelectSlaveIfRequired(false);
@@ -285,56 +329,78 @@ uint16_t WioSPIClass::transfer16(const uint16_t data)
     return received;
 }
 
-void WioSPIClass::transfer(void *buf, const size_t count)
+size_t WioSPIClass::transferWords(const uint16_t* sendData, uint16_t* receivedData, const size_t count)
 {
-    if (count == 0) return;
-    uint8_t *p = (uint8_t *)buf;
-    SPDR = *p;
-    while (--count > 0) {
-      uint8_t out = *(p + 1);
-      while (!(SPSR & _BV(SPIF))) ;
-      uint8_t in = SPDR;
-      SPDR = out;
-      *p++ = in;
+    if (TryInitializeParameter(SPI_DATASIZE_16BIT) == false)
+    {
+        return 0;
     }
-    while (!(SPSR & _BV(SPIF))) ;
-    *p = SPDR;
+
+    SelectSlaveIfRequired(true);
+
+    auto handle = getHandle(*this);
+    size_t received;
+    if (HAL_SPI_TransmitReceive(handle, sendData, receivedData, count, 10000) != HAL_OK)
+    {
+        received = 0;
+    }
+    else
+    {
+        received = count;
+    }
+
+    SelectSlaveIfRequired(false);
+
+    return received;
 }
 
-// This function is deprecated.  New applications should use
-// beginTransaction() to configure SPI settings.
 void WioSPIClass::setBitOrder(const uint8_t bitOrder)
 {
     auto handle = getHandle(*this);
 
     handle->Init.FirstBit = (bitOrder == LSBFIRST) ? SPI_FIRSTBIT_LSB : SPI_FIRSTBIT_MSB;
-    requireInitialize_ = true;
+    parameterInitialized_ = false;
 }
 
-// This function is deprecated.  New applications should use
-// beginTransaction() to configure SPI settings.
 void WioSPIClass::setDataMode(const uint8_t dataMode)
 {
-    SPCR = (SPCR & ~SPI_MODE_MASK) | dataMode;
+    auto handle = getHandle(*this);
+
+    handle->Init.CLKPolarity = ((dataMode == SPI_MODE2) || (dataMode == SPI_MODE3)) ? SPI_POLARITY_HIGH : SPI_POLARITY_LOW;
+    handle->Init.CLKPhase = ((dataMode == SPI_MODE1) || (dataMode == SPI_MODE3)) ? SPI_PHASE_2EDGE : SPI_PHASE_1EDGE;
+    parameterInitialized_ = false;
 }
 
-// This function is deprecated.  New applications should use
-// beginTransaction() to configure SPI settings.
 void WioSPIClass::setClockDivider(const uint8_t clockDiv)
 {
-    SPCR = (SPCR & ~SPI_CLOCK_MASK) | (clockDiv & SPI_CLOCK_MASK);
-    SPSR = (SPSR & ~SPI_2XCLOCK_MASK) | ((clockDiv >> 2) & SPI_2XCLOCK_MASK);
-}
+    auto handle = getHandle(*this);
 
-// These undocumented functions should not be used.  SPI.transfer()
-// polls the hardware flag which is automatically cleared as the
-// AVR responds to SPI's interrupt
-void WioSPIClass::attachInterrupt()
-{
-    SPCR |= _BV(SPIE);
-}
+    switch (clockDiv)
+    {
+        case SPI_CLOCK_DIV2:
+            handle->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+            break;
+        case SPI_CLOCK_DIV4:
+            handle->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
+            break;
+        case SPI_CLOCK_DIV8:
+            handle->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
+            break;
+        case SPI_CLOCK_DIV16:
+            handle->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+            break;
+        case SPI_CLOCK_DIV32:
+            handle->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
+            break;
+        case SPI_CLOCK_DIV64:
+            handle->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_64;
+            break;
+        case SPI_CLOCK_DIV128:
+            handle->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_128;
+            break;
+        default:
+            return;
+    }
 
-void WioSPIClass::detachInterrupt()
-{
-    SPCR &= ~_BV(SPIE);
+    parameterInitialized_ = false;
 }
