@@ -148,3 +148,26 @@ public:
 
 // Legacy Arduino implementation (It's statical facade)
 extern SPIClass SPI;
+
+///////////////////////////////////////
+// Arduino SD library compatibility
+
+// It's dirty hack, but hide implements behind Arduino :(
+
+#ifndef WIO3G_EXCLUDE_ARDUINO_SD_LIBRARY_COMPATIBILITY
+
+#define Sd2PinMap_h
+
+extern uint8_t const SS_PIN;
+extern uint8_t const MOSI_PIN;
+extern uint8_t const MISO_PIN;
+extern uint8_t const SCK_PIN;
+
+#define SDCARD_SS_PIN SS_PIN
+#define SDCARD_MOSI_PIN MOSI_PIN
+#define SDCARD_MISO_PIN MISO_PIN
+#define SDCARD_SCK_PIN SCK_PIN
+
+#define boolean bool
+
+#endif

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "ArduinoSetupAndLoop.h"
+#include "ArduinoSPI.h"
+
 #include <stddef.h>	// size_t
 #include <stdint.h>	// uint8_t
 #include <vector>	// std::vector

@@ -40,6 +40,13 @@
 #define MISO_SPI3 PINNAME_TO_PIN('C', 11)
 #define MOSI_SPI3 PINNAME_TO_PIN('C', 12)
 
+uint8_t const SS_PIN = NSS_SPI3;
+uint8_t const MOSI_PIN = MOSI_SPI3;
+uint8_t const MISO_PIN = MISO_SPI3;
+uint8_t const SCK_PIN = SCK_SPI3;
+
+////////////////////////////////////////////////////////////////////////////////////////
+
 // Wio 3G default SPI interface (bound SPI3 - TF card interface)
 WioSPIClass WioTFSPI(WioSPIClass::WioSPI3, SCK_SPI3, MOSI_SPI3, MISO_SPI3);
 
