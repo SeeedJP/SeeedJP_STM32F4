@@ -44,5 +44,5 @@ uint32_t DslI2cGpioAlternate(I2C_TypeDef* reg, int pin);
 extern SPI_TypeDef* const DslSpiRegs[];
 
 void DslSpiClockEnable(SPI_TypeDef* reg);
-bool DslSpiNssAuto(SPI_TypeDef* reg, const int pin);
+bool DslSpiNssGpio(SPI_TypeDef* reg, const int pin);
 uint32_t DslSpiGpioAlternate(SPI_TypeDef* reg, const int pin);

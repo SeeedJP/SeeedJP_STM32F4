@@ -11,7 +11,12 @@
 #include <stm32f4xx_hal.h>
 #include <DeviceSupportLibrary.h>
 
+#include <string.h>
+#include <alloca.h>
+
 ////////////////////////////////////////////////////////////////////////////////////////
+
+#define PINNAME_TO_PIN(port, pin) ((port - 'A') * 16 + pin)
 
 #define NSS_SPI3 PINNAME_TO_PIN('D', 0)     // (Not hardware NSS)
 #define SCK_SPI3 PINNAME_TO_PIN('C', 10)
@@ -69,11 +74,9 @@ void WioSPISettings::init(int selectPin, uint32_t clock, uint8_t bitOrder, uint8
     parameter->Direction = SPI_DIRECTION_2LINES;
     parameter->DataSize = SPI_DATASIZE_8BIT;
     parameter->NSS = SPI_NSS_SOFT;
-    parameter->NSSPMode = SPI_NSS_PULSE_DISABLE;
 
     parameter->TIMode = SPI_TIMODE_DISABLE;
     parameter->CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-    parameter->CRCLength = SPI_CRC_LENGTH_DATASIZE;
     parameter->CRCPolynomial = 7;
 
     parameter->BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;   // TODO:
@@ -82,12 +85,14 @@ void WioSPISettings::init(int selectPin, uint32_t clock, uint8_t bitOrder, uint8
     parameter->CLKPhase = ((dataMode == SPI_MODE1) || (dataMode == SPI_MODE3)) ? SPI_PHASE_2EDGE : SPI_PHASE_1EDGE;
 }
 
+static WioSPISettings g_DefaultSPISettings;
+
 ////////////////////////////////////////////////////////////////////////////////////////
 
 #define getRegs(t) (static_cast<SPI_TypeDef*>((t).regs_))
 #define getHandle(t) (static_cast<SPI_HandleTypeDef*>((t).handle_))
 
-#define getSelectPinOrDefaulted(t) ((((t).selectPin_) == -1) ? ((t).selectPin_) : NSS_SPI3)
+#define getSelectPinOrDefaulted(t) ((((t).selectPin_) == -1) ? ((t).selectPin_) : g_DefaultSPISettings.selectPin_)
 
 WioSPIClass::WioSPIClass(const enum WioSPIClass::WioSPIDevice device, const int clockPin, const int mosiPin, const int misoPin)
     : regs_(DslSpiRegs[static_cast<int>(device)])
@@ -131,7 +136,7 @@ void WioSPIClass::begin()
     {
         handle_ = new SPI_HandleTypeDef;
         memset(handle_, 0, sizeof(SPI_HandleTypeDef));
-        selectPin_ = selectPin;
+        selectPin_ = -1;
 
         auto handle = getHandle(*this);
         handle->Init = *getParameter(g_DefaultSPISettings);
@@ -167,12 +172,12 @@ void WioSPIClass::end()
 void WioSPIClass::InitializeSelectSlaveGpioPort()
 {
     auto regs = getRegs(*this);
+    auto handle = getHandle(*this);
+
     const auto selectPin = getSelectPinOrDefaulted(*this);
     const auto autoNss = DslSpiNssGpio(regs, selectPin);
 
     handle->Init.NSS = autoNss ? SPI_NSS_HARD_OUTPUT : SPI_NSS_SOFT;
-    handle->Init.NSSPMode = autoNss ? SPI_NSS_PULSE_ENABLED : SPI_NSS_PULSE_DISABLED;
-
     if (handle->Init.NSS == SPI_NSS_SOFT)
     {
         InitializeSPIRelatedGpioPort(regs, selectPin);
@@ -210,6 +215,8 @@ void WioSPIClass::endTransaction(void)
 
 bool WioSPIClass::TryInitializeParameter(const uint32_t dataSize)
 {
+    auto handle = getHandle(*this);
+
     if ((parameterInitialized_ == false) || (handle->Init.DataSize != dataSize))
     {
         if (parameterInitialized_ == true)
@@ -244,7 +251,7 @@ void WioSPIClass::SelectSlaveIfRequired(const bool select)
         auto selectPin = getSelectPinOrDefaulted(*this);
         auto selectRegs = DslGpioRegs[selectPin / 16];
         const auto rawSelectPin = DslGpioPins[selectPin % 16];
-        HAL_GPIO_WritePin(selectRegs, rawSelectPin, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(selectRegs, rawSelectPin, select ? GPIO_PIN_SET : GPIO_PIN_RESET);
     }
 }
 
@@ -259,7 +266,12 @@ uint8_t WioSPIClass::transfer(const uint8_t data)
 
     auto handle = getHandle(*this);
     uint8_t receivedData = 0;
-    if (HAL_SPI_TransmitReceive(handle, &data, &receivedData, sizeof receivedData, 10000) != HAL_OK)
+    if (HAL_SPI_TransmitReceive(
+        handle,
+        const_cast<uint8_t*>(&data),
+        &receivedData,
+        sizeof receivedData,
+        10000) != HAL_OK)
     {
         receivedData = 0;
     }
@@ -280,7 +292,12 @@ uint16_t WioSPIClass::transfer16(const uint16_t data)
 
     auto handle = getHandle(*this);
     uint16_t receivedData = 0;
-    if (HAL_SPI_TransmitReceive(handle, &data, &receivedData, sizeof receivedData, 10000) != HAL_OK)
+    if (HAL_SPI_TransmitReceive(
+        handle,
+        reinterpret_cast<uint8_t*>(const_cast<uint16_t*>(&data)),
+        reinterpret_cast<uint8_t*>(&receivedData),
+        sizeof receivedData,
+        10000) != HAL_OK)
     {
         receivedData = 0;
     }
@@ -293,7 +310,7 @@ uint16_t WioSPIClass::transfer16(const uint16_t data)
 void WioSPIClass::transfer(void *buf, const size_t count)
 {
     // Use temporary buffer, we have to avoid race condition at full duplex transfer.
-    uint8_t* receivedData = alloca(count);
+    auto receivedData = static_cast<uint8_t*>(alloca(count));
     if (transferBytes(static_cast<const uint8_t*>(buf), receivedData, count) == count)
     {
         memcpy(buf, receivedData, count);
@@ -315,7 +332,12 @@ size_t WioSPIClass::transferBytes(const uint8_t* sendData, uint8_t* receivedData
 
     auto handle = getHandle(*this);
     size_t received;
-    if (HAL_SPI_TransmitReceive(handle, sendData, receivedData, count, 10000) != HAL_OK)
+    if (HAL_SPI_TransmitReceive(
+        handle,
+        const_cast<uint8_t*>(sendData),
+        receivedData,
+        count,
+        10000) != HAL_OK)
     {
         received = 0;
     }
@@ -340,7 +362,12 @@ size_t WioSPIClass::transferWords(const uint16_t* sendData, uint16_t* receivedDa
 
     auto handle = getHandle(*this);
     size_t received;
-    if (HAL_SPI_TransmitReceive(handle, sendData, receivedData, count, 10000) != HAL_OK)
+    if (HAL_SPI_TransmitReceive(
+        handle,
+        reinterpret_cast<uint8_t*>(const_cast<uint16_t*>(sendData)),
+        reinterpret_cast<uint8_t*>(receivedData),
+        count,
+        10000) != HAL_OK)
     {
         received = 0;
     }

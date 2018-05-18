@@ -335,7 +335,7 @@ void DslSpiClockEnable(SPI_TypeDef* reg)
 	else if (reg == SPI4) __HAL_RCC_SPI4_CLK_ENABLE();
 }
 
-bool DslSpiNssAuto(SPI_TypeDef* reg, const int pin)
+bool DslSpiNssGpio(SPI_TypeDef* reg, const int pin)
 {
 	if (reg == SPI1) {
 		switch (pin) {
