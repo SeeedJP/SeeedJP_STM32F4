@@ -118,6 +118,9 @@ public:
   void setClockDivider(const uint8_t clockDiv);
 };
 
+// Wio 3G default SPI interface (bound SPI1)
+extern WioSPIClass WioSPI;
+
 // Wio 3G default SPI interface (bound SPI3 - TF card interface)
 extern WioSPIClass WioTFSPI;
 
@@ -126,28 +129,28 @@ typedef WioSPISettings SPISettings;
 class SPIClass
 {
 public:
-  static inline void begin() { WioTFSPI.begin(); }
-  static inline void end() { WioTFSPI.end(); }
+  static inline void begin() { WioSPI.begin(); }
+  static inline void end() { WioSPI.end(); }
 
   static inline void usingInterrupt(uint8_t interruptNumber) { }
   static inline void notUsingInterrupt(uint8_t interruptNumber) { }
 
   // It signature bit changed because save from copy construct.
-  static inline void beginTransaction(const SPISettings& settings) { WioTFSPI.beginTransaction(settings); }
+  static inline void beginTransaction(const SPISettings& settings) { WioSPI.beginTransaction(settings); }
 
-  static inline void endTransaction(void) { WioTFSPI.endTransaction(); }
+  static inline void endTransaction(void) { WioSPI.endTransaction(); }
 
-  static inline uint8_t transfer(uint8_t data) { return WioTFSPI.transfer(data); }
-  static inline uint16_t transfer16(uint16_t data) { return WioTFSPI.transfer16(data); }
-  static inline void transfer(void *buf, size_t count) { WioTFSPI.transfer(buf, count); }
+  static inline uint8_t transfer(uint8_t data) { return WioSPI.transfer(data); }
+  static inline uint16_t transfer16(uint16_t data) { return WioSPI.transfer16(data); }
+  static inline void transfer(void *buf, size_t count) { WioSPI.transfer(buf, count); }
 
-  static inline void setBitOrder(uint8_t bitOrder) { WioTFSPI.setBitOrder(bitOrder); }
-  static inline void setDataMode(uint8_t dataMode) { WioTFSPI.setDataMode(dataMode); }
-  static inline void setClockDivider(uint8_t clockDiv) { WioTFSPI.setClockDivider(clockDiv); }
+  static inline void setBitOrder(uint8_t bitOrder) { WioSPI.setBitOrder(bitOrder); }
+  static inline void setDataMode(uint8_t dataMode) { WioSPI.setDataMode(dataMode); }
+  static inline void setClockDivider(uint8_t clockDiv) { WioSPI.setClockDivider(clockDiv); }
 };
 
 // Legacy Arduino implementation (It's statical facade)
-extern SPIClass SPI;
+extern const SPIClass SPI;
 
 ///////////////////////////////////////
 // Arduino SD library compatibility
@@ -156,17 +159,20 @@ extern SPIClass SPI;
 
 #ifndef WIO3G_EXCLUDE_ARDUINO_SD_LIBRARY_COMPATIBILITY
 
+#define USE_SPI_LIB
 #define Sd2PinMap_h
 
-extern uint8_t const SS_PIN;
-extern uint8_t const MOSI_PIN;
-extern uint8_t const MISO_PIN;
-extern uint8_t const SCK_PIN;
+extern const uint8_t WIO_TF_SS_PIN;
+extern const uint8_t WIO_TF_MOSI_PIN;
+extern const uint8_t WIO_TF_MISO_PIN;
+extern const uint8_t WIO_TF_SCK_PIN;
 
-#define SDCARD_SS_PIN SS_PIN
-#define SDCARD_MOSI_PIN MOSI_PIN
-#define SDCARD_MISO_PIN MISO_PIN
-#define SDCARD_SCK_PIN SCK_PIN
+#define SDCARD_SS_PIN WIO_TF_SS_PIN
+#define SDCARD_MOSI_PIN WIO_TF_MOSI_PIN
+#define SDCARD_MISO_PIN WIO_TF_MISO_PIN
+#define SDCARD_SCK_PIN WIO_TF_SCK_PIN
+
+#define SDCARD_SPI WioTFSPI
 
 #define boolean bool
 

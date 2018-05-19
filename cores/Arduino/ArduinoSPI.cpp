@@ -35,23 +35,32 @@
 
 #define PINNAME_TO_PIN(port, pin) ((port - 'A') * 16 + pin)
 
+#define NSS_SPI1 PINNAME_TO_PIN('A', 4)
+#define SCK_SPI1 PINNAME_TO_PIN('A', 5)
+#define MISO_SPI1 PINNAME_TO_PIN('A', 6)
+#define MOSI_SPI1 PINNAME_TO_PIN('A', 7)
+
 #define NSS_SPI3 PINNAME_TO_PIN('D', 0)     // (Not hardware NSS)
 #define SCK_SPI3 PINNAME_TO_PIN('C', 10)
 #define MISO_SPI3 PINNAME_TO_PIN('C', 11)
 #define MOSI_SPI3 PINNAME_TO_PIN('C', 12)
 
-uint8_t const SS_PIN = NSS_SPI3;
-uint8_t const MOSI_PIN = MOSI_SPI3;
-uint8_t const MISO_PIN = MISO_SPI3;
-uint8_t const SCK_PIN = SCK_SPI3;
+// Arduino compatibility - SPI3 (TF card interface)
+const uint8_t WIO_TF_SS_PIN = NSS_SPI3;
+const uint8_t WIO_TF_MOSI_PIN = MOSI_SPI3;
+const uint8_t WIO_TF_MISO_PIN = MISO_SPI3;
+const uint8_t WIO_TF_SCK_PIN = SCK_SPI3;
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-// Wio 3G default SPI interface (bound SPI3 - TF card interface)
+// Wio 3G default SPI interface (bound SPI1)
+WioSPIClass WioSPI(WioSPIClass::WioSPI1, SCK_SPI1, MOSI_SPI1, MISO_SPI1);
+
+// Wio 3G default SPI interface (bound SPI3)
 WioSPIClass WioTFSPI(WioSPIClass::WioSPI3, SCK_SPI3, MOSI_SPI3, MISO_SPI3);
 
 // Legacy Arduino implementation (It's static facade)
-SPIClass SPI;
+const SPIClass SPI;
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -61,8 +70,8 @@ SPIClass SPI;
 WioSPISettings::WioSPISettings()
     : parameter_(new SPI_InitTypeDef)
 {
-    // Defaulted: SPI3, 4MHz, MSB, MODE0
-    init(NSS_SPI3, 4000000, MSBFIRST, SPI_MODE0);
+    // Defaulted: SPI1, 4MHz, MSB, MODE0
+    init(NSS_SPI1, 4000000, MSBFIRST, SPI_MODE0);
 }
 
 WioSPISettings::WioSPISettings(uint32_t clock, uint8_t bitOrder, uint8_t dataMode)
@@ -109,14 +118,12 @@ void WioSPISettings::init(int selectPin, uint32_t clock, uint8_t bitOrder, uint8
     parameter->CLKPhase = ((dataMode == SPI_MODE1) || (dataMode == SPI_MODE3)) ? SPI_PHASE_2EDGE : SPI_PHASE_1EDGE;
 }
 
-static WioSPISettings g_DefaultSPISettings;
-
 ////////////////////////////////////////////////////////////////////////////////////////
 
 #define getRegs(t) (static_cast<SPI_TypeDef*>((t).regs_))
 #define getHandle(t) (static_cast<SPI_HandleTypeDef*>((t).handle_))
 
-#define getSelectPinOrDefaulted(t) ((((t).selectPin_) == -1) ? ((t).selectPin_) : g_DefaultSPISettings.selectPin_)
+#define getSelectPinOrDefaulted(t) ((((t).selectPin_) == -1) ? ((t).selectPin_) : NSS_SPI1)
 
 WioSPIClass::WioSPIClass(const enum WioSPIClass::WioSPIDevice device, const int clockPin, const int mosiPin, const int misoPin)
     : regs_(DslSpiRegs[static_cast<int>(device)])
@@ -126,7 +133,7 @@ WioSPIClass::WioSPIClass(const enum WioSPIClass::WioSPIDevice device, const int 
     , beginCount_(0)
     , parameterInitialized_(false)
     , handle_(nullptr)
-    , selectPin_(0)
+    , selectPin_(-1)
 {
 }
 
