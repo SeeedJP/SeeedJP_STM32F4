@@ -1,4 +1,5 @@
 #include "Arduino.h"
+#include "Print.h"
 #include <string.h>
 
 #define DELIM	"\r\n"
