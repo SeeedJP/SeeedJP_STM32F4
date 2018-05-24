@@ -7,7 +7,7 @@ static unsigned long MicrosDiff(unsigned long begin, unsigned long end)
 	return end - begin;
 }
 
-int pulseIn(int pin, int value, unsigned long timeout)
+unsigned long pulseIn(int pin, int value, unsigned long timeout)
 {
 	auto begin = micros();
 

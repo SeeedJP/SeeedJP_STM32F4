@@ -28,7 +28,7 @@ void analogWrite(int pin, int value);
 
 // ArduinoAdvancedIO.cpp
 
-int pulseIn(int pin, int value, unsigned long timeout = 1000000);
+unsigned long pulseIn(int pin, int value, unsigned long timeout = 1000000);
 
 // ArduinoTime.cpp
 
