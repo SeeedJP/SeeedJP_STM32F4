@@ -39,5 +39,6 @@ unsigned long millis();
 
 // Default includes
 
+#include "WString.h"
 #include "HardwareSerial.h"
 #include "Wire.h"	// TODO Remove in the future
