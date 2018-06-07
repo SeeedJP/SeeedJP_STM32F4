@@ -4,6 +4,7 @@
 #include <stddef.h>	// size_t
 #include <stdint.h>	// uint8_t
 
+typedef bool boolean;
 typedef uint8_t byte;
 
 // ArduinoDigitalIO.cpp
