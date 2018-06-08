@@ -38,6 +38,14 @@ void delayMicroseconds(int us);
 unsigned long micros();
 unsigned long millis();
 
+// OriginalAPI.cpp
+
+enum LowPowerModeType {
+	LOW_POWER_MODE_SLEEP,
+};
+
+void enterLowPowerMode(LowPowerModeType mode);
+
 // Default includes
 
 #include "WString.h"
