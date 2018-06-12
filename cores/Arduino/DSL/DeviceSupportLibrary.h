@@ -46,3 +46,8 @@ extern I2C_TypeDef* const DslI2cRegs[];
 
 void DslI2cClockEnable(I2C_TypeDef* reg);
 uint32_t DslI2cGpioAlternate(I2C_TypeDef* reg, int pin);
+
+////////////////////////////////////////
+// Interrupt
+
+void DslInterruptExtiEnable(int num);

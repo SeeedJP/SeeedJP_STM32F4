@@ -38,6 +38,14 @@ void delayMicroseconds(int us);
 unsigned long micros();
 unsigned long millis();
 
+// ArduinoInterrupt.cpp
+
+#define CHANGE	(0)
+#define FALLING	(1)
+#define RISING	(2)
+
+void attachInterrupt(int pin, void (*userFunc)(void), int mode);
+
 // OriginalAPI.cpp
 
 enum LowPowerModeType {

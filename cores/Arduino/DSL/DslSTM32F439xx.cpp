@@ -348,4 +348,36 @@ uint32_t DslI2cGpioAlternate(I2C_TypeDef* reg, int pin)
 	return 0;	// TODO Fail.
 }
 
+////////////////////////////////////////
+// Interrupt
+
+void DslInterruptExtiEnable(int num)
+{
+	switch (num) {
+	case 0:
+		HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+		break;
+	case 1:
+		HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+		break;
+	case 2:
+		HAL_NVIC_EnableIRQ(EXTI2_IRQn);
+		break;
+	case 3:
+		HAL_NVIC_EnableIRQ(EXTI3_IRQn);
+		break;
+	case 4:
+		HAL_NVIC_EnableIRQ(EXTI4_IRQn);
+		break;
+	default:
+		if (5 <= num && num <= 9) {
+			HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+		}
+		else if (10 <= num && num <= 15) {
+			HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+		}
+		break;
+	}
+}
+
 #endif // STM32F439xx
