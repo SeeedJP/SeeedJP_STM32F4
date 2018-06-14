@@ -52,6 +52,8 @@ enum LowPowerModeType {
 	LOW_POWER_MODE_SLEEP,
 };
 
+void suspendSysTick();
+void resumeSysTick();
 void enterLowPowerMode(LowPowerModeType mode);
 
 // Default includes
