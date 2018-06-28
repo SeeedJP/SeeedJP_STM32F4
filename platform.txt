@@ -91,8 +91,17 @@ recipe.size.regex.data=^(?:\.data|\.ccmram|\.bss)\s+([0-9]+).*
 # --------------------------------------------------------------------------------
 
 tools.daplink-tools.path={runtime.tools.daplink-tools.path}
-
 tools.daplink-tools.upload.params.verbose=
 tools.daplink-tools.upload.params.quiet=
 tools.daplink-tools.upload.pattern.windows="{path}/windows/daplink-upload.exe" "{build.path}/{build.project_name}.bin"
 tools.daplink-tools.upload.pattern.macosx="cp" "{build.path}/{build.project_name}.bin" /Volumes/DAPLINK/
+
+tools.openocd.path.windows={runtime.tools.openocd.path}
+tools.openocd.path.macosx={runtime.tools.openocd.path}/macosx
+tools.openocd.path.linux={runtime.tools.openocd.path}/linux
+tools.openocd.cmd.macosx=bin/openocd
+tools.openocd.cmd.linux=bin/openocd
+tools.openocd.cmd.windows=bin/openocd.exe
+tools.openocd.upload.params.verbose=-d2
+tools.openocd.upload.params.quiet=-d0
+tools.openocd.upload.pattern="{path}/{cmd}" -f "{path}/scripts/interface/cmsis-dap.cfg" -c 'transport select swd' -f "{path}/scripts/target/stm32f4x.cfg" -c "program {{{build.path}/{build.project_name}.bin}} verify reset 0x08000000; shutdown"
