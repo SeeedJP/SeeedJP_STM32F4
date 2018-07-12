@@ -23,3 +23,24 @@ Wio3G.menu.upload_method.OpenOCDMethod.upload.tool=openocd
 Wio3G.menu.upload_method.OpenOCDMethod.upload.protocol=openocd
 
 ##############################################################
+
+WioLTEM1BG96.name=Seeed Wio LTE M1/NB1(BG96)
+
+WioLTEM1BG96.build.board=WIO_LTE_M1NB1_BG96
+WioLTEM1BG96.build.core=Arduino
+WioLTEM1BG96.build.ldscript=Boards/STM324x9I_EVAL/STM32F439NIHx_FLASH.ld
+
+WioLTEM1BG96.menu.Debug.Disabled=DebugOFF
+WioLTEM1BG96.menu.Debug.Disabled.build.debug_print=
+WioLTEM1BG96.menu.Debug.Enabled=DebugON
+WioLTEM1BG96.menu.Debug.Enabled.build.debug_print=-DWIO_DEBUG
+
+WioLTEM1BG96.menu.upload_method.DAPLinkToolsMethod=MSD
+WioLTEM1BG96.menu.upload_method.DAPLinkToolsMethod.upload.tool=daplink-tools
+WioLTEM1BG96.menu.upload_method.DAPLinkToolsMethod.upload.protocol=msd
+
+WioLTEM1BG96.menu.upload_method.OpenOCDMethod=OpenOCD
+WioLTEM1BG96.menu.upload_method.OpenOCDMethod.upload.tool=openocd
+WioLTEM1BG96.menu.upload_method.OpenOCDMethod.upload.protocol=openocd
+
+##############################################################
