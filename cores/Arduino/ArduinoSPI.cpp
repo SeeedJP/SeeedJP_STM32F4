@@ -62,6 +62,9 @@ WioSPIClass WioTFSPI(WioSPIClass::WioSPI3, SCK_SPI3, MOSI_SPI3, MISO_SPI3);
 // Legacy Arduino implementation (It's static facade)
 const SPIClass SPI;
 
+// Default SPI setting instance.
+static WioSPISettings g_DefaultSPISettings;
+
 ////////////////////////////////////////////////////////////////////////////////////////
 
 #define getSelectPin(t) ((t).selectPin_)
