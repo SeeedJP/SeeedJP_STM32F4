@@ -61,3 +61,4 @@ void enterLowPowerMode(LowPowerModeType mode);
 #include "WString.h"
 #include "HardwareSerial.h"
 #include "Wire.h"	// TODO Remove in the future
+#include "ArduinoSPI.h"

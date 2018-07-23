@@ -349,6 +349,116 @@ uint32_t DslI2cGpioAlternate(I2C_TypeDef* reg, int pin)
 }
 
 ////////////////////////////////////////
+// SPI
+
+SPI_TypeDef* const DslSpiRegs[] = {
+	SPI1,
+	SPI2,
+	SPI3,
+	SPI4,
+};
+
+void DslSpiClockEnable(SPI_TypeDef* reg)
+{
+	if (reg == SPI1) __HAL_RCC_SPI1_CLK_ENABLE();
+	else if (reg == SPI2) __HAL_RCC_SPI2_CLK_ENABLE();
+	else if (reg == SPI3) __HAL_RCC_SPI3_CLK_ENABLE();
+	else if (reg == SPI4) __HAL_RCC_SPI4_CLK_ENABLE();
+}
+
+bool DslSpiNssGpio(SPI_TypeDef* reg, const int pin)
+{
+	if (reg == SPI1) {
+		switch (pin) {
+		case PINNAME_TO_PIN('A', 4):
+		case PINNAME_TO_PIN('A', 15):
+			return true;
+		}
+	}
+	else if (reg == SPI2) {
+		switch (pin) {
+		case PINNAME_TO_PIN('B', 9):
+			return true;
+		}
+	}
+	else if (reg == SPI3) {
+		switch (pin) {
+		case PINNAME_TO_PIN('A', 4):
+		case PINNAME_TO_PIN('A', 15):
+			return true;
+		}
+	}
+	else if (reg == SPI4) {
+		switch (pin) {
+		case PINNAME_TO_PIN('E', 4):
+		case PINNAME_TO_PIN('E', 11):
+			return true;
+		}
+	}
+
+	return false;
+}
+
+uint32_t DslSpiGpioAlternate(SPI_TypeDef* reg, const int pin)
+{
+	if (reg == SPI1) {
+		switch (pin) {
+		case PINNAME_TO_PIN('A', 4):
+		case PINNAME_TO_PIN('A', 5):
+		case PINNAME_TO_PIN('A', 6):
+		case PINNAME_TO_PIN('A', 7):
+		case PINNAME_TO_PIN('A', 15):
+		case PINNAME_TO_PIN('B', 3):
+		case PINNAME_TO_PIN('B', 4):
+			return GPIO_AF5_SPI1;
+		}
+	}
+	else if (reg == SPI2) {
+		switch (pin) {
+		case PINNAME_TO_PIN('C', 2):
+		case PINNAME_TO_PIN('C', 3):
+		case PINNAME_TO_PIN('B', 9):
+		case PINNAME_TO_PIN('B', 10):
+		case PINNAME_TO_PIN('B', 12):
+		case PINNAME_TO_PIN('B', 13):
+		case PINNAME_TO_PIN('B', 14):
+		case PINNAME_TO_PIN('B', 15):
+		case PINNAME_TO_PIN('D', 3):
+			return GPIO_AF5_SPI2;
+		}
+	}
+	else if (reg == SPI3) {
+		switch (pin) {
+		case PINNAME_TO_PIN('A', 4):
+		case PINNAME_TO_PIN('A', 15):
+		case PINNAME_TO_PIN('C', 10):
+		case PINNAME_TO_PIN('C', 11):
+		case PINNAME_TO_PIN('C', 12):
+		case PINNAME_TO_PIN('D', 6):
+		case PINNAME_TO_PIN('B', 3):
+		case PINNAME_TO_PIN('B', 4):
+		case PINNAME_TO_PIN('B', 5):
+			return GPIO_AF6_SPI3;
+		}
+	}
+	else if (reg == SPI4) {
+		switch (pin) {
+		case PINNAME_TO_PIN('E', 2):
+		case PINNAME_TO_PIN('E', 4):
+		case PINNAME_TO_PIN('E', 5):
+		case PINNAME_TO_PIN('E', 6):
+		case PINNAME_TO_PIN('E', 11):
+		case PINNAME_TO_PIN('E', 12):
+		case PINNAME_TO_PIN('E', 13):
+		case PINNAME_TO_PIN('E', 14):
+			return GPIO_AF5_SPI4;
+		}
+	}
+
+	return 0;	// TODO Fail.
+}
+
+////////////////////////////////////////
 // Interrupt
 
 void DslInterruptExtiEnable(int num)
