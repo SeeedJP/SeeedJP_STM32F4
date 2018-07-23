@@ -1,4 +1,5 @@
 #include "Arduino.h"
+#include "Wire.h"
 #include <stm32f4xx_hal.h>
 #include <DeviceSupportLibrary.h>
 

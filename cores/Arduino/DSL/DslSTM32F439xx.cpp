@@ -134,6 +134,37 @@ uint32_t DslAdcChannel(ADC_TypeDef* reg, int pin)
 }
 
 ////////////////////////////////////////
+// DAC
+
+DAC_TypeDef* const DslDacRegs[] = {
+	DAC1
+};
+
+const uint32_t DslDacChannels[] = {
+	DAC_CHANNEL_1,
+	DAC_CHANNEL_2
+};
+
+void DslDacClockEnable(DAC_TypeDef* reg)
+{
+	if (reg == DAC1) { __HAL_RCC_DAC_CLK_ENABLE(); }
+}
+
+uint32_t DslDacChannel(DAC_TypeDef* reg, int pin)
+{
+	switch (pin) {
+	case PINNAME_TO_PIN('A', 4):
+		if (reg == DAC1) return DAC_CHANNEL_1;
+		break;
+	case PINNAME_TO_PIN('A', 5):
+		if (reg == DAC1) return DAC_CHANNEL_2;
+		break;
+	}
+
+	return 0;	// TODO Fail.
+}
+
+////////////////////////////////////////
 // UART
 
 USART_TypeDef* const DslUartRegs[] = {
@@ -315,6 +346,38 @@ uint32_t DslI2cGpioAlternate(I2C_TypeDef* reg, int pin)
 	}
 
 	return 0;	// TODO Fail.
+}
+
+////////////////////////////////////////
+// Interrupt
+
+void DslInterruptExtiEnable(int num)
+{
+	switch (num) {
+	case 0:
+		HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+		break;
+	case 1:
+		HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+		break;
+	case 2:
+		HAL_NVIC_EnableIRQ(EXTI2_IRQn);
+		break;
+	case 3:
+		HAL_NVIC_EnableIRQ(EXTI3_IRQn);
+		break;
+	case 4:
+		HAL_NVIC_EnableIRQ(EXTI4_IRQn);
+		break;
+	default:
+		if (5 <= num && num <= 9) {
+			HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+		}
+		else if (10 <= num && num <= 15) {
+			HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+		}
+		break;
+	}
 }
 
 #endif // STM32F439xx

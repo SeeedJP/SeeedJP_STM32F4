@@ -20,6 +20,15 @@ void DslAdcClockEnable(ADC_TypeDef* reg);
 uint32_t DslAdcChannel(ADC_TypeDef* reg, int pin);
 
 ////////////////////////////////////////
+// DAC
+
+extern DAC_TypeDef* const DslDacRegs[];
+extern const uint32_t DslDacChannels[];
+
+void DslDacClockEnable(DAC_TypeDef* reg);
+uint32_t DslDacChannel(DAC_TypeDef* reg, int pin);
+
+////////////////////////////////////////
 // UART
 
 extern USART_TypeDef* const DslUartRegs[];
@@ -37,3 +46,8 @@ extern I2C_TypeDef* const DslI2cRegs[];
 
 void DslI2cClockEnable(I2C_TypeDef* reg);
 uint32_t DslI2cGpioAlternate(I2C_TypeDef* reg, int pin);
+
+////////////////////////////////////////
+// Interrupt
+
+void DslInterruptExtiEnable(int num);
