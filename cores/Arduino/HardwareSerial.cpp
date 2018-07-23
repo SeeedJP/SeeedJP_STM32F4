@@ -227,6 +227,10 @@ int HardwareSerial::RxReadByte()
 		_RxBuffer.pop();
 	}
 
+	if (_RxBufferCapacity >= 1 && (int)_RxBuffer.size() <= _RxBufferCapacity * 1 / 3) {
+		digitalWrite(_RtsPin, LOW);
+	}
+
 	EnableIRQ();
 
 	return data;
@@ -241,6 +245,10 @@ void HardwareSerial::RxReadCallback()
 	}
 	else {
 		_RxBuffer.push(_RxByte);
+	}
+
+	if (_RxBufferCapacity >= 1 && (int)_RxBuffer.size() >= _RxBufferCapacity * 2 / 3) {
+		digitalWrite(_RtsPin, HIGH);
 	}
 
 	HAL_UART_Receive_IT(handle, &_RxByte, 1);
