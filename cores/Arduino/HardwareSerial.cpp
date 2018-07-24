@@ -5,13 +5,16 @@
 #include <stm32f4xx_it.h>
 #include <string.h>
 
-HardwareSerial::HardwareSerial(int port, int txPin, int rxPin)
+HardwareSerial::HardwareSerial(int port, int txPin, int rxPin, int ctsPin, int rtsPin)
 {
 	_Port = port;
 	_TxPin = txPin;
 	_RxPin = rxPin;
+	_CtsPin = ctsPin;
+	_RtsPin = rtsPin;
 
 	_RxBufferCapacity = 0;
+	_TxTimeout = HAL_MAX_DELAY;
 
 	DslUartInstances[_Port] = this;
 }
@@ -25,12 +28,16 @@ void HardwareSerial::begin(long speed, int config)
 {
 	auto handle = &ItUartHandles[_Port];
 
-	_TxBuffers[0].clear();
-	_TxBuffers[1].clear();
-	_TxBufferCurrent = 0;
-
 	while (!_RxBuffer.empty()) _RxBuffer.pop();
 	_RxBufferOverflow = false;
+
+	if (_CtsPin >= 0) {
+		pinMode(_CtsPin, INPUT);
+	}
+	if (_RtsPin >= 0) {
+		pinMode(_RtsPin, OUTPUT);
+		digitalWrite(_RtsPin, LOW);
+	}
 
 	DslGpioClockEnable(DslGpioRegs[_TxPin / 16]);
 	DslGpioClockEnable(DslGpioRegs[_RxPin / 16]);
@@ -92,10 +99,12 @@ void HardwareSerial::end()
 
 	HAL_UART_DeInit(handle);
 
-	_TxBuffers[0].clear();
-	_TxBuffers[1].clear();
-
 	while (!_RxBuffer.empty()) _RxBuffer.pop();
+}
+
+int HardwareSerial::available() const
+{
+	return RxReadedSize();
 }
 
 int HardwareSerial::read()
@@ -103,14 +112,9 @@ int HardwareSerial::read()
 	return RxReadByte();
 }
 
-void HardwareSerial::flush()
+int HardwareSerial::getReadBufferSize() const
 {
-	while (!TxIsReady()) {}
-}
-
-int HardwareSerial::available() const
-{
-	return RxReadedSize();
+	return _RxBufferCapacity;
 }
 
 void HardwareSerial::setReadBufferSize(int size)
@@ -128,9 +132,24 @@ void HardwareSerial::clearReadOverflow()
 	_RxBufferOverflow = false;
 }
 
+unsigned long HardwareSerial::getWriteTimeout() const
+{
+	return _TxTimeout;
+}
+
+void HardwareSerial::setWriteTimeout(unsigned long timeout)
+{
+	_TxTimeout = timeout;
+}
+
+void HardwareSerial::flush()
+{
+	return;
+}
+
 size_t HardwareSerial::write(uint8_t val)
 {
-	TxWriteAsync((const uint8_t*)&val, 1);
+	TxWrite((const uint8_t*)&val, 1);
 
 	return 1;
 }
@@ -143,47 +162,6 @@ void HardwareSerial::EnableIRQ() const
 void HardwareSerial::DisableIRQ() const
 {
 	HAL_NVIC_DisableIRQ(DslUartIRQs[_Port]);
-}
-
-bool HardwareSerial::TxIsReady() const
-{
-	auto handle = &ItUartHandles[_Port];
-
-	return handle->gState == HAL_UART_STATE_READY;
-}
-
-void HardwareSerial::TxWriteAsync(const uint8_t* data, int dataSize, const uint8_t* data2, int data2Size)
-{
-	auto handle = &ItUartHandles[_Port];
-
-	DisableIRQ();
-
-	auto transmitting = !_TxBuffers[_TxBufferCurrent].empty();
-
-	auto txBuffer = &_TxBuffers[(_TxBufferCurrent + 1) % 2];
-	auto txBufferSize = txBuffer->size();
-	txBuffer->resize(txBufferSize + dataSize + data2Size);
-	memcpy(&(*txBuffer)[txBufferSize], data, dataSize);
-	if (data2Size >= 1) memcpy(&(*txBuffer)[txBufferSize + dataSize], data2, data2Size);
-
-	if (!transmitting) {
-		_TxBufferCurrent = (_TxBufferCurrent + 1) % 2;
-		HAL_UART_Transmit_IT(handle, &_TxBuffers[_TxBufferCurrent][0], _TxBuffers[_TxBufferCurrent].size());
-	}
-
-	EnableIRQ();
-}
-
-void HardwareSerial::TxWriteCallback()
-{
-	auto handle = &ItUartHandles[_Port];
-
-	_TxBuffers[_TxBufferCurrent].clear();
-
-	_TxBufferCurrent = (_TxBufferCurrent + 1) % 2;
-	if (!_TxBuffers[_TxBufferCurrent].empty()) {
-		HAL_UART_Transmit_IT(handle, &_TxBuffers[_TxBufferCurrent][0], _TxBuffers[_TxBufferCurrent].size());
-	}
 }
 
 void HardwareSerial::RxReadStart()
@@ -217,6 +195,10 @@ int HardwareSerial::RxReadByte()
 		_RxBuffer.pop();
 	}
 
+	if (_RtsPin >= 0 && _RxBufferCapacity >= 1 && (int)_RxBuffer.size() <= _RxBufferCapacity * 1 / 3) {
+		digitalWrite(_RtsPin, LOW);
+	}
+
 	EnableIRQ();
 
 	return data;
@@ -233,13 +215,132 @@ void HardwareSerial::RxReadCallback()
 		_RxBuffer.push(_RxByte);
 	}
 
+	if (_RtsPin >= 0 && _RxBufferCapacity >= 1 && (int)_RxBuffer.size() >= _RxBufferCapacity * 2 / 3) {
+		digitalWrite(_RtsPin, HIGH);
+	}
+
 	HAL_UART_Receive_IT(handle, &_RxByte, 1);
 }
 
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef* handle)
+void HardwareSerial::TxWrite(const uint8_t* data, int dataSize)
 {
-	auto port = DslUartToPort(handle->Instance);
-	((HardwareSerial*)DslUartInstances[port])->TxWriteCallback();
+	auto handle = &ItUartHandles[_Port];
+
+	HardwareSerial::HAL_UART_Transmit(handle, data, dataSize, _TxTimeout);
+}
+
+int HardwareSerial::HAL_UART_Transmit(void *huart_vp, const uint8_t *pData, uint16_t Size, uint32_t Timeout)
+{
+	auto huart = (UART_HandleTypeDef*)huart_vp;
+	const uint16_t* tmp;
+	uint32_t tickstart = 0U;
+
+	/* Check that a Tx process is not already ongoing */
+	if (huart->gState == HAL_UART_STATE_READY)
+	{
+		if ((pData == NULL) || (Size == 0))
+		{
+			return  HAL_ERROR;
+		}
+
+		/* Process Locked */
+		//__HAL_LOCK(huart);
+
+		huart->ErrorCode = HAL_UART_ERROR_NONE;
+		huart->gState = HAL_UART_STATE_BUSY_TX;
+
+		/* Init tickstart for timeout managment */
+		tickstart = HAL_GetTick();
+
+		huart->TxXferSize = Size;
+		huart->TxXferCount = Size;
+		while (huart->TxXferCount > 0U)
+		{
+			huart->TxXferCount--;
+
+			while (_CtsPin >= 0 && digitalRead(_CtsPin) == HIGH)
+			{
+				if ((Timeout == 0U) || ((HAL_GetTick() - tickstart) > Timeout))
+				{
+					huart->gState = HAL_UART_STATE_READY;
+					//__HAL_UNLOCK(huart);
+					return HAL_TIMEOUT;
+				}
+			}
+
+			if (huart->Init.WordLength == UART_WORDLENGTH_9B)
+			{
+				if (UART_WaitOnFlagUntilTimeout(huart, UART_FLAG_TXE, RESET, tickstart, Timeout) != HAL_OK)
+				{
+					return HAL_TIMEOUT;
+				}
+				tmp = (const uint16_t*)pData;
+				huart->Instance->DR = (*tmp & (uint16_t)0x01FF);
+				if (huart->Init.Parity == UART_PARITY_NONE)
+				{
+					pData += 2U;
+				}
+				else
+				{
+					pData += 1U;
+				}
+			}
+			else
+			{
+				if (UART_WaitOnFlagUntilTimeout(huart, UART_FLAG_TXE, RESET, tickstart, Timeout) != HAL_OK)
+				{
+					return HAL_TIMEOUT;
+				}
+				huart->Instance->DR = (*pData++ & (uint8_t)0xFF);
+			}
+		}
+
+		if (UART_WaitOnFlagUntilTimeout(huart, UART_FLAG_TC, RESET, tickstart, Timeout) != HAL_OK)
+		{
+			return HAL_TIMEOUT;
+		}
+
+		/* At end of Tx process, restore huart->gState to Ready */
+		huart->gState = HAL_UART_STATE_READY;
+
+		/* Process Unlocked */
+		//__HAL_UNLOCK(huart);
+
+		return HAL_OK;
+	}
+	else
+	{
+		return HAL_BUSY;
+	}
+}
+
+int HardwareSerial::UART_WaitOnFlagUntilTimeout(void *huart_vp, uint32_t Flag, int Status, uint32_t Tickstart, uint32_t Timeout)
+{
+	auto huart = (UART_HandleTypeDef*)huart_vp;
+	/* Wait until flag is set */
+	while ((__HAL_UART_GET_FLAG(huart, Flag) ? SET : RESET) == Status)
+	{
+		/* Check for the Timeout */
+		if (Timeout != HAL_MAX_DELAY)
+		{
+			if ((Timeout == 0U) || ((HAL_GetTick() - Tickstart) > Timeout))
+			{
+				/* Disable TXE, RXNE, PE and ERR (Frame error, noise error, overrun error) interrupts for the interrupt process */
+				CLEAR_BIT(huart->Instance->CR1, (USART_CR1_RXNEIE | USART_CR1_PEIE | USART_CR1_TXEIE));
+				CLEAR_BIT(huart->Instance->CR3, USART_CR3_EIE);
+
+				huart->gState = HAL_UART_STATE_READY;
+				huart->RxState = HAL_UART_STATE_READY;
+
+				/* Process Unlocked */
+				//__HAL_UNLOCK(huart);
+
+				return HAL_TIMEOUT;
+			}
+		}
+	}
+
+	return HAL_OK;
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef* handle)
