@@ -195,7 +195,7 @@ int HardwareSerial::RxReadByte()
 		_RxBuffer.pop();
 	}
 
-	if (_RxBufferCapacity >= 1 && (int)_RxBuffer.size() <= _RxBufferCapacity * 1 / 3) {
+	if (_RtsPin >= 0 && _RxBufferCapacity >= 1 && (int)_RxBuffer.size() <= _RxBufferCapacity * 1 / 3) {
 		digitalWrite(_RtsPin, LOW);
 	}
 
@@ -215,7 +215,7 @@ void HardwareSerial::RxReadCallback()
 		_RxBuffer.push(_RxByte);
 	}
 
-	if (_RxBufferCapacity >= 1 && (int)_RxBuffer.size() >= _RxBufferCapacity * 2 / 3) {
+	if (_RtsPin >= 0 && _RxBufferCapacity >= 1 && (int)_RxBuffer.size() >= _RxBufferCapacity * 2 / 3) {
 		digitalWrite(_RtsPin, HIGH);
 	}
 
