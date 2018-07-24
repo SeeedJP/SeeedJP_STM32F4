@@ -15,7 +15,7 @@ compiler.flags.function.cpp=-std=c++14
 compiler.flags.arm=-mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
 compiler.flags.warning=-Wall
 compiler.flags.preprocessor=-DARDUINO_{build.board} -DSTM32F439xx -DUSE_HAL_DRIVER {build.debug_print}
-compiler.flags.optimization=-Os -ffunction-sections
+compiler.flags.optimization=-ffunction-sections
 compiler.flags.debugging=-g
 compiler.flags.include.stm32cubef4="-I{build.core.path}/STM32CubeF4/Drivers/CMSIS/Include" "-I{build.core.path}/STM32CubeF4/Drivers/CMSIS/Device/ST/STM32F4xx/Include" "-I{build.core.path}/STM32CubeF4/Drivers/STM32F4xx_HAL_Driver/Inc" "-I{build.core.path}/DSL" "-I{build.core.path}/Boards/STM324x9I_EVAL"
 compiler.flags.include={compiler.flags.include.stm32cubef4}

@@ -10,9 +10,9 @@ Wio3G.build.core=Arduino
 Wio3G.build.ldscript=Boards/STM324x9I_EVAL/STM32F439NIHx_FLASH.ld
 
 Wio3G.menu.Debug.Disabled=DebugOFF
-Wio3G.menu.Debug.Disabled.build.debug_print=
+Wio3G.menu.Debug.Disabled.build.debug_print=-Os
 Wio3G.menu.Debug.Enabled=DebugON
-Wio3G.menu.Debug.Enabled.build.debug_print=-DWIO_DEBUG
+Wio3G.menu.Debug.Enabled.build.debug_print=-O0 -DWIO_DEBUG
 
 Wio3G.menu.upload_method.DAPLinkToolsMethod=MSD
 Wio3G.menu.upload_method.DAPLinkToolsMethod.upload.tool=daplink-tools
