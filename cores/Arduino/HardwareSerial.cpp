@@ -244,7 +244,7 @@ int HardwareSerial::HAL_UART_Transmit(void *huart_vp, const uint8_t *pData, uint
 		}
 
 		/* Process Locked */
-		__HAL_LOCK(huart);
+		//__HAL_LOCK(huart);
 
 		huart->ErrorCode = HAL_UART_ERROR_NONE;
 		huart->gState = HAL_UART_STATE_BUSY_TX;
@@ -263,7 +263,7 @@ int HardwareSerial::HAL_UART_Transmit(void *huart_vp, const uint8_t *pData, uint
 				if ((Timeout == 0U) || ((HAL_GetTick() - tickstart) > Timeout))
 				{
 					huart->gState = HAL_UART_STATE_READY;
-					__HAL_UNLOCK(huart);
+					//__HAL_UNLOCK(huart);
 					return HAL_TIMEOUT;
 				}
 			}
@@ -272,8 +272,6 @@ int HardwareSerial::HAL_UART_Transmit(void *huart_vp, const uint8_t *pData, uint
 			{
 				if (UART_WaitOnFlagUntilTimeout(huart, UART_FLAG_TXE, RESET, tickstart, Timeout) != HAL_OK)
 				{
-					huart->gState = HAL_UART_STATE_READY;
-					__HAL_UNLOCK(huart);
 					return HAL_TIMEOUT;
 				}
 				tmp = (const uint16_t*)pData;
@@ -291,8 +289,6 @@ int HardwareSerial::HAL_UART_Transmit(void *huart_vp, const uint8_t *pData, uint
 			{
 				if (UART_WaitOnFlagUntilTimeout(huart, UART_FLAG_TXE, RESET, tickstart, Timeout) != HAL_OK)
 				{
-					huart->gState = HAL_UART_STATE_READY;
-					__HAL_UNLOCK(huart);
 					return HAL_TIMEOUT;
 				}
 				huart->Instance->DR = (*pData++ & (uint8_t)0xFF);
@@ -301,8 +297,6 @@ int HardwareSerial::HAL_UART_Transmit(void *huart_vp, const uint8_t *pData, uint
 
 		if (UART_WaitOnFlagUntilTimeout(huart, UART_FLAG_TC, RESET, tickstart, Timeout) != HAL_OK)
 		{
-			huart->gState = HAL_UART_STATE_READY;
-			__HAL_UNLOCK(huart);
 			return HAL_TIMEOUT;
 		}
 
@@ -310,7 +304,7 @@ int HardwareSerial::HAL_UART_Transmit(void *huart_vp, const uint8_t *pData, uint
 		huart->gState = HAL_UART_STATE_READY;
 
 		/* Process Unlocked */
-		__HAL_UNLOCK(huart);
+		//__HAL_UNLOCK(huart);
 
 		return HAL_OK;
 	}
@@ -339,7 +333,7 @@ int HardwareSerial::UART_WaitOnFlagUntilTimeout(void *huart_vp, uint32_t Flag, i
 				huart->RxState = HAL_UART_STATE_READY;
 
 				/* Process Unlocked */
-				__HAL_UNLOCK(huart);
+				//__HAL_UNLOCK(huart);
 
 				return HAL_TIMEOUT;
 			}
