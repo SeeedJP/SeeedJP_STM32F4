@@ -38,6 +38,10 @@ void delayMicroseconds(int us);
 unsigned long micros();
 unsigned long millis();
 
+// ArduinoMath.cpp
+
+long map(long x, long in_min, long in_max, long out_min, long out_max);
+
 // ArduinoInterrupt.cpp
 
 #define CHANGE	(0)
