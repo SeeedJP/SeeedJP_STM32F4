@@ -12,11 +12,12 @@ typedef uint8_t byte;
 #define HIGH	(0x1)
 #define LOW		(0x0)
 
-#define OUTPUT			(0)
-#define INPUT			(1)
-#define INPUT_PULLUP	(2)
-#define INPUT_ANALOG	(3)
-#define OUTPUT_ANALOG	(4)
+#define OUTPUT				(0)
+#define OUTPUT_OPEN_DRAIN	(5)
+#define INPUT				(1)
+#define INPUT_PULLUP		(2)
+#define INPUT_ANALOG		(3)
+#define OUTPUT_ANALOG		(4)
 
 int digitalRead(int pin);
 void digitalWrite(int pin, int value);

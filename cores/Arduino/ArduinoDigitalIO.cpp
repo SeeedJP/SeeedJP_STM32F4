@@ -24,6 +24,10 @@ void pinMode(int pin, int mode)
 		gpioInit.Mode = GPIO_MODE_OUTPUT_PP;
 		gpioInit.Pull = GPIO_NOPULL;
 		break;
+	case OUTPUT_OPEN_DRAIN:
+		gpioInit.Mode = GPIO_MODE_OUTPUT_OD;
+		gpioInit.Pull = GPIO_NOPULL;
+		break;
 	case INPUT:
 		gpioInit.Mode = GPIO_MODE_INPUT;
 		gpioInit.Pull = GPIO_NOPULL;
