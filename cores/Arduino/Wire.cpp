@@ -22,8 +22,6 @@ TwoWire::~TwoWire()
 
 void TwoWire::begin()
 {
-	I2C_HandleTypeDef* handle = (I2C_HandleTypeDef*)_Handle;
-
 	DslGpioClockEnable(DslGpioRegs[_SdaPin / 16]);
 	DslGpioClockEnable(DslGpioRegs[_SclPin / 16]);
 
@@ -42,16 +40,12 @@ void TwoWire::begin()
 
 	DslI2cClockEnable(DslI2cRegs[_Port]);
 
-	handle->Instance = DslI2cRegs[_Port];
-	handle->Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-	handle->Init.ClockSpeed = 400000;
-	handle->Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-	handle->Init.DutyCycle = I2C_DUTYCYCLE_2;
-	handle->Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-	handle->Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-	handle->Init.OwnAddress1 = 0;
-	handle->Init.OwnAddress2 = 0;
-	if (HAL_I2C_Init(handle) != HAL_OK) return;
+	I2cInit(100000);
+}
+
+void TwoWire::setClock(int clock)
+{
+	I2cInit(clock);
 }
 
 void TwoWire::beginTransmission(int address)
@@ -106,3 +100,20 @@ int TwoWire::read()
 
 	return val;
 }
+
+void TwoWire::I2cInit(int clock)
+{
+	I2C_HandleTypeDef* handle = (I2C_HandleTypeDef*)_Handle;
+
+	handle->Instance = DslI2cRegs[_Port];
+	handle->Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+	handle->Init.ClockSpeed = clock;
+	handle->Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+	handle->Init.DutyCycle = I2C_DUTYCYCLE_2;
+	handle->Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+	handle->Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+	handle->Init.OwnAddress1 = 0;
+	handle->Init.OwnAddress2 = 0;
+	if (HAL_I2C_Init(handle) != HAL_OK) return;
+}
+

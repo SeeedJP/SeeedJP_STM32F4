@@ -10,6 +10,7 @@ public:
 	~TwoWire();
 
 	void begin();
+	void setClock(int clock);
 
 	void beginTransmission(int address);
 	void write(uint8_t data);
@@ -27,5 +28,7 @@ private:
 
 	int _Address;
 	std::vector<uint8_t> _Buffer;
+
+	void I2cInit(int clock);
 
 };
