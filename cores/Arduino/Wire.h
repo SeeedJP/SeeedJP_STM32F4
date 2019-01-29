@@ -29,3 +29,7 @@ private:
 	std::vector<uint8_t> _Buffer;
 
 };
+
+#if defined ARDUINO_WIO_3G || defined ARDUINO_WIO_LTE_M1NB1_BG96
+extern TwoWire Wire;
+#endif
